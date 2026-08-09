@@ -1,34 +1,31 @@
 #pragma once
-#include <bits/stdc++.h>
+class Limit;
 
 class Order {
 private:
-    int id;
-    bool buySell;
-    int qtty;
+    int idNumber;
+    bool buyOrSell;
+    int shares;
     int limit;
-    Order* next;
-    Order* prev;
-    Limit* parent;
+    Order *nextOrder;
+    Order *prevOrder;
+    Limit *parentLimit;
 
     friend class Limit;
-
 public:
-    Order(int _id, bool _buySell, int _qtty, int _limit);
+    Order(int _idNumber, bool _buyOrSell, int _shares, int _limit);
 
-    // getters
-    int getShares const();
-    int getOrderId const();
-    bool getBuySell const();
-    int getLimit const();
-    Limit* getParentLimit const();
+    int getShares() const;
+    int getOrderId() const;
+    bool getBuyOrSell() const;
+    int getLimit() const;
+    Limit* getParentLimit() const;
 
-    void partialFillOrder(int shares);
+    void partiallyFillOrder(int orderedShares);
     void cancel();
     void execute();
     void modifyOrder(int newShares, int newLimit);
-    void setShares(int shares);
-
+    void setShares(int newShares);
 
     void print() const;
 };
