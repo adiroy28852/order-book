@@ -49,11 +49,31 @@ private:
     void marketOrderHelper(int orderId, bool buyOrSell, int shares);
 
 public:
-    Book (Limit *_buyTree, Limit *_sellTree, Limit *_lowestSell, Limit *_highestBuy
-    , Limit *_stopBuyTree, Limit *_stopSellTree, Limit *_highestStopSell, Limit *_lowestStopBuy) 
-        : buyTree(_buyTree), sellTree(_sellTree), lowestSell(_lowestSell), highestBuy(_highestBuy), 
-        stopBuyTree(_stopBuyTree), stopSellTree(_stopSellTree), highestStopSell(_highestStopSell), lowestStopBuy(_lowestStopBuy) {}
-    
-    int executeOrdersCount = 0;
-    int AVLTreeBalanceCount = 0;
+    Book();
+    ~Book();
+
+    int executedOrdersCount {0};
+    int AVLTreeBalanceCount {0};
+
+    // getters and setters
+    Limit* getBuyTree() const;
+    Limit* getSellTree() const;
+    Limit* getLowestSell() const;
+    Limit* getHighestBuy() const;
+    Limit* getStopBuyTree() const;
+    Limit* getStopSellTree() const;
+    Limit* getHighestStopSell() const;
+    Limit* getLowestStopBuy() const;
+
+    // fncn for type of orders
+    void marketOrder(int orderId, bool buyOrSell, int shares);
+    void addLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice);
+    void cancelLimitOrder(int orderId);
+    void modifyLimitOrder(int orderId, int newShares, int newLimit);
+    void adStopOrder(int orderId, bool buyOrSell, int shares, int stopPrice);
+    void canceLStopOrder(int orderId);
+    void modifyStopOrder(int orderId, int newShares, int newStopPrice);
+    void addStopLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice, int stopPrice);
+    void cancelStopLimitOrder(int orderId);
+    void modifyStopLimitOrder(int orderId, int newShares, int newLimitPrice, int newStopPrice);
 };
