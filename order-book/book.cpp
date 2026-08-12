@@ -32,3 +32,82 @@ Book::~Book() {
     }
     stopMap.clear();
 }
+
+Limit* Book::getBuyTree() const {
+    return buyTree;
+}
+
+Limit* Book::getSellTree() const {
+    return sellTree;
+}
+
+Limit* Book::getLowestSell() const {
+    return lowestSell;
+}
+
+Limit* Book::getHighestBuy() const {
+    return highestBuy;
+}
+
+Limit* Book::getStopBuyTree() const {
+    return stopBuyTree;
+}
+
+Limit* Book::getStopSellTree() const {
+    return stopSellTree;
+}
+
+Limit* Book::getHighestStopSell() const {
+    return highestStopSell;
+}
+
+Limit* Book::getLowestStopBuy() const {
+    return lowestStopBuy;
+}
+
+// execute order
+void Book::marketOrder(int orderId, bool buyOrSell, int shares) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+
+    marketOrderHelper(orderId, buyOrSell, shares);
+    executeStopOrders(buyOrSell);
+}
+
+// add a new limit order 
+void Book::addLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice) {
+    AVLTreeBalanceCount = 0;
+    // if order is executed imediately
+    shares = limitOrderAsMarketOrder(orderId, buyOrSell, shares, limitPrice);
+
+    if (shares != 0) {
+        Order* newOrder = new Order(orderId, buyOrSell, shares, limitPrice);
+        orderMap.emplace(orderId, newOrder);
+        auto &limitMap = buyOrSell ? limitBuyMap : limitSellMap;
+
+        if (limitMap.find(limitPrice) == limitMap.end()) {
+            addLimit(limitPrice, newOrder->getBuyOrSell());
+        }
+
+        limitMap.at(limitPrice)->append(newOrder);
+    }
+    else {
+        executeStopOrders(buyOrSell);
+    }
+}
+
+// delete limit order from book
+void Book::cancelLimitOrder(int orderId) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    // Order* order = search() <- implemneti this
+    Order* order;
+    if (order != nullptr) {
+        order->cancel();
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteLimit(order->getParentLimit());
+        }
+        deleteFromOrderMap(orderId);
+        delete order;
+    }
+}
