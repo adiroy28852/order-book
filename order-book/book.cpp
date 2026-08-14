@@ -100,8 +100,8 @@ void Book::addLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice
 void Book::cancelLimitOrder(int orderId) {
     executedOrdersCount = 0;
     AVLTreeBalanceCount = 0;
-    // Order* order = search() <- implemneti this
-    Order* order;
+    Order* order = searchOrderMap(orderId);
+    // Order* order;
     if (order != nullptr) {
         order->cancel();
         if (order->getParentLimit()->getSize() == 0) {
@@ -109,5 +109,24 @@ void Book::cancelLimitOrder(int orderId) {
         }
         deleteFromOrderMap(orderId);
         delete order;
+    }
+}
+
+void Book::modifyLimitOrder(int orderId, int newShares, int newLimit) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    Order* order = searchOrderMap(orderId);
+    if (order != nullptr) {
+        order->cancel();
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteLimit(order->getParentLimit());
+        }
+        order->modifyOrder(newShares, newLimit);
+        auto& limitMap = order->getBuyOrSell() ? limitBuyMap : limitSellMap;
+
+        if (limitMap.find(newLimit) == limitMap.end()) {
+            addLimit(newLimit, order->getBuyOrSell());
+        }
+        limitMap.at(newLimit)->append(order);
     }
 }

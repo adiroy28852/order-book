@@ -77,5 +77,13 @@ public:
     void cancelStopLimitOrder(int orderId);
     void modifyStopLimitOrder(int orderId, int newShares, int newLimitPrice, int newStopPrice);
 
-    
+    int getLimitHeight(Limit* limit) const;
+    Order* searchOrderMap(int orderId) const;
+    Limit* searchLimitMaps(int limitPrice, bool buyOrSell) const;
+    Limit* searchStopMap(int stopPrice) const;
+
+    Order* getRandomOrder(int key, std::mt19937 gen) const;
+    std::unordered_set<Order*> limitOrders;
+    std::unordered_set<Order*> stopOrders;
+    std::unordered_set<Order*> stopLimitOrders;
 };
