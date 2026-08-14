@@ -76,4 +76,6 @@ public:
     void addStopLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice, int stopPrice);
     void cancelStopLimitOrder(int orderId);
     void modifyStopLimitOrder(int orderId, int newShares, int newLimitPrice, int newStopPrice);
+
+    
 };
