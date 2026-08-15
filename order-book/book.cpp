@@ -130,3 +130,56 @@ void Book::modifyLimitOrder(int orderId, int newShares, int newLimit) {
         limitMap.at(newLimit)->append(order);
     }
 }
+
+void Book::addStopOrder(int orderId, bool buyOrSell, int shares, int stopPrice) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    // immediate execution of stop orders
+    shares = stopOrderAsMarketOrder(orderId, buyOrSell, shares, stopPrice);
+
+    if (shares != 0) {
+        Order* newOrder = new Order(orderId, buyOrSell, shares , 0);
+        orderMap.emplace(orderId, newOrder);
+
+        if (stopMap.find(stopPrice) == stopMap.end()) {
+            addStop(stopPrice, newOrder->getBuyOrSell());
+        }
+        stopMap.at(stopPrice)->append(newOrder);
+    }
+}
+
+// delete order from stopbook
+void Book::canceLStopOrder(int orderId) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    Order* order = searchOrderMap(orderId);
+
+    if (order != nullptr) {
+        order->cancel();
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteStopLevel(order->getParentLimit());
+        }
+        deleteFromOrderMap(orderId);
+        delete order;
+    }
+}
+
+// modify existing stoporder
+void Book::modifyStopOrder(int orderId, int newShares, int newStopPrice) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    Order* order = searchOrderMap(orderId);
+
+    if (order != nullptr) {
+        order->cancel();
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteStopLevel(order->getParentLimit());
+        }
+        order->modifyOrder(newShares, 0);
+        if (stopMap.find(newStopPrice) == stopMap.end()) {
+            addStop(newStopPrice, order->getBuyOrSell());
+        }
+        stopMap.at(newStopPrice)->append(order);
+    }
+}
+
