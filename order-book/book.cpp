@@ -183,3 +183,98 @@ void Book::modifyStopOrder(int orderId, int newShares, int newStopPrice) {
     }
 }
 
+// add stop limit order
+void Book::addStopLimitOrder(int orderId, bool buyOrSell, int shares, int limitPrice, int stopPrice) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    // order executed immediately
+    shares = stopLimitOrderAsLimitOrder(orderId, buyOrSell, shares, limitPrice, stopPrice);
+    if (shares != 0) {
+        Order* newOrder = new Order(orderId, buyOrSell, shares, limitPrice);
+        orderMap.emplace(orderId, newOrder);
+
+        if (stopMap.find(stopPrice) == stopMap.end()) {
+            addStop(stopPrice, newOrder->getBuyOrSell());
+        }
+
+    }
+}
+
+void Book::cancelStopLimitOrder(int orderId) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    Order* order = searchOrderMap(orderId);
+
+    if (order != nullptr) {
+        order->cancel();
+
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteStopLevel(order->getParentLimit());
+        }
+        deleteFromOrderMap(orderId);
+        delete order;
+    }
+}
+
+//modify existing stoplimitorder
+void Book::modifyStopLimitOrder(int orderId, int newShares, int newLimitPrice, int newStopPrice) {
+    executedOrdersCount = 0;
+    AVLTreeBalanceCount = 0;
+    Order* order = searchOrderMap(orderId);
+
+    if (order != nullptr) {
+        order->cancel();
+        if (order->getParentLimit()->getSize() == 0) {
+            deleteStopLevel(order->getParentLimit());
+        }
+        order->modifyOrder(newShares, newLimitPrice);
+
+        if (stopMap.find(newStopPrice) == stopMap.end()) {
+            addStop(newStopPrice, order->getBuyOrSell());
+        }
+        stopMap.at(newStopPrice)->append(order);
+    }
+}
+
+//  get tree height of limit
+int Book::getLimitHeight(Limit* limit) const {
+    if (limit == NULL) {
+        return 0;
+    }
+
+    int l = getLimitHeight(limit->getLeftChild());
+    int r = getLimitHeight(limit->getRightChild());
+    return std::max(l, r) + 1;
+}
+
+// search map to find order
+Order* Book::searchOrderMap(int orderId) const {
+    auto it = orderMap.find(orderId);
+    if (it != orderMap.end()) {
+        return it->second;
+    }
+    std::cout << "NO order with this number : " << orderId << std::endl;
+    return nullptr;
+}
+
+// search for limit
+Limit* Book::searchLimitMaps(int limitPrice, bool buyOrSell) const {
+    auto& limitMap = buyOrSell ? limitBuyMap : limitSellMap;
+
+    auto it = limitMap.find(limitPrice);
+    if (it != limitMap.end()) {
+        return it->second;
+    }
+    std::cout << "No " << (buyOrSell ? "buy" : "sell") << " Limit at " << limitPrice << std::endl;
+    return nullptr;
+}
+
+// search for stop lvl
+Limit* Book::searchStopMap(int stopPrice) const {
+    auto it = stopMap.find(stopPrice);
+    if (it != stopMap.end()) {
+        return it->second;
+    }
+    std::cout << "No stop lvl at " << stopPrice << std::endl;
+    return nullptr;
+}
