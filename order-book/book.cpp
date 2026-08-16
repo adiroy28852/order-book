@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <iostream>
 #include <algorithm>
+#include <iterator>
+#include <random>
 
 
 Book::Book() : buyTree(nullptr), sellTree(nullptr), lowestSell(nullptr), 
@@ -278,3 +280,41 @@ Limit* Book::searchStopMap(int stopPrice) const {
     std::cout << "No stop lvl at " << stopPrice << std::endl;
     return nullptr;
 }
+
+Order* Book::getRandomOrder(int key, std::mt19937 gen) const {
+    if (!key) {
+        if (limitOrders.size() > 10000) {
+            std::uniform_int_distribution<> mapDist(0, limitOrders.size() -1 );
+            int randIndex = mapDist(gen);
+
+            auto it = limitOrders.begin();
+            std::advance(it, randIndex);
+            return *it;
+        }
+        return nullptr;
+    }
+    else if (key == 1) {
+        if (stopOrders.size() > 500) {
+            std::uniform_int_distribution<> mapDist(0, stopOrders.size() -1 );
+            int randIndex = mapDist(gen);
+
+            auto it = stopOrders.begin();
+            std::advance(it, randIndex);
+            return *it;
+        }
+        return nullptr;
+    }
+    else if (key == 2) {
+        if (stopLimitOrders.size() > 500) {
+            std::uniform_int_distribution<> mapDist(0, stopLimitOrders.size() - 1);
+            int randIndex = mapDist(gen);
+
+            auto it = stopLimitOrders.begin();
+            std:std::advance(it, randIndex);
+            return *it;
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
