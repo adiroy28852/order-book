@@ -318,3 +318,51 @@ Order* Book::getRandomOrder(int key, std::mt19937 gen) const {
     return nullptr;
 }
 
+// add new order
+void Book::addLimit(int limitPrice, bool buyOrSell) {
+    auto& limitMap = buyOrSell ? limitBuyMap : limitSellMap;
+    auto& tree = buyOrSell ? buyTree : sellTree;
+    auto& bookEdge = buyOrSell ? highestBuy : lowestSell;
+
+    Limit* newLimit = new Limit(limitPrice, buyOrSell);
+    limitMap.emplace(limitPrice, newLimit);
+
+    if (tree == NULL) {
+        tree = newLimit;
+        bookEdge = newLimit;
+    }
+    else {
+        Limit* root = insert(tree, newLimit);
+        updateBookEdgeInsert(newLimit);
+    }
+}
+
+// add new stop to book
+void Book::addStop(int stopPrice, bool buyOrSell) {
+    auto& tree = buyOrSell ? stopBuyTree : stopSellTree;
+    auto& bookEdge = buyOrSell ? lowestStopBuy : highestStopSell;
+
+    Limit* newStop = new Limit(stopPrice, buyOrSell);
+    stopMap.emplace(stopPrice, newStop);
+    if (tree == NULL) {
+        tree = newStop;
+        bookEdge = newStop;
+    }
+    else {
+        Limit* root = insertStop(tree, newStop);
+        updateStopBookEdgeInsert(newStop);
+    }
+}
+
+// insert limit in the bst
+Limit* Book::insert(Limit* root, Limit* limit, Limit* parent) {
+    if (root == nullptr) {
+        limit->setParent(parent);
+        return limit;
+    }
+    if (limit->getLimitPrice() < root->getLimitPrice()) {
+        root->setLeftChild(insert(root->getLeftChild(), limit, root));
+        // balance the tree now - to implement
+    }
+
+}
