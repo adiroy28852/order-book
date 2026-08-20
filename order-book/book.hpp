@@ -82,6 +82,19 @@ public:
     Limit* searchLimitMaps(int limitPrice, bool buyOrSell) const;
     Limit* searchStopMap(int stopPrice) const;
 
+    //balancing three
+    int limitHeightDifference(Limit* limit);
+    Limit* rrRotate(Limit* limit);
+    Limit* llRotate(Limit* limit);
+    Limit* lrRotate(Limit* limit);
+    Limit* rlRotate(Limit* limit);
+    Limit* balance(Limit* limit);
+    Limit* rrRotateStop(Limit* limit);
+    Limit* llRotateStop(Limit* limit);
+    Limit* lrRotateStop(Limit* limit);
+    Limit* rlRotateStop(Limit* limit);
+    Limit* balanceStop(Limit* limit);
+
     Order* getRandomOrder(int key, std::mt19937 gen) const;
     std::unordered_set<Order*> limitOrders;
     std::unordered_set<Order*> stopOrders;

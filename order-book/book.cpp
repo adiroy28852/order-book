@@ -362,7 +362,56 @@ Limit* Book::insert(Limit* root, Limit* limit, Limit* parent) {
     }
     if (limit->getLimitPrice() < root->getLimitPrice()) {
         root->setLeftChild(insert(root->getLeftChild(), limit, root));
-        // balance the tree now - to implement
+        root = balance(root);
     }
+    else if (limit->getLimitPrice() > root->getLimitPrice()) {
+        root->setRightChild(insert(root->getRightChild(), limit, root));
+        root = balance(root);
+    }
+    return root;
+}
 
+// insert limit inthe stop bst
+Limit* Book::insertStop(Limit* root, Limit* limit, Limit* parent) {
+    if (root == nullptr) {
+        limit->setParent(parent);
+        return limit;
+    }
+    if (limit->getLimitPrice() < root->getLimitPrice()) {
+        root->setLeftChild(insertStop(root->getLeftChild(), limit, root));
+        root = balanceStop(root);
+    }
+    else if (limit->getLimitPrice() > root->getLimitPrice()) {
+        root->setRightChild(insertStop(root->getRightChild(), limit, root));
+        root = balanceStop(root);
+    }
+    return root;
+}
+
+//update edge if new limit is on edge of book
+void Book::updateBookEdgeInsert(Limit* newLimit) {
+    if (newLimit->getBuyOrSell()) {
+        if (newLimit->getLimitPrice() > highestBuy->getLimitPrice()) {
+            highestBuy = newLimit;
+        }
+    }
+    else {
+        if (newLimit->getLimitPrice() < lowestSell->getLimitPrice()) {
+            lowestSell = newLimit;
+        }
+    }
+}
+
+//update ege of stopbook if new stop is on edge of book
+void Book::updateStopBookEdgeInsert(Limit* newStop) {
+    if (newStop->getBuyOrSell()) {
+        if (newStop->getLimitPrice() < lowestStopBuy->getLimitPrice()) {
+            lowestStopBuy = newStop;
+        }
+    }
+    else {
+        if (newStop->getLimitPrice() > highestStopSell->getLimitPrice()) {
+            highestStopSell = newStop;
+        }
+    }
 }
