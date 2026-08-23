@@ -1,7 +1,6 @@
 #pragma once
 
 #include "order.hpp"
-#include "limit.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -26,4 +25,5 @@ public:
     const Order* find_order(OrderId id) const noexcept;
 
     Order& add_order(OrderId id, Side side, Price price, Quantity quantity);
+    Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };
