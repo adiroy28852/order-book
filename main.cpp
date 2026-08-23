@@ -4,6 +4,6 @@
 #include <atomic>
 
 int main() {
-    Book *book = new Book();
+    // Book *book = new Book();
 
 }

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "book.hpp"
 #include "limit.hpp"
-#include "order.hpp"
 
 #include <cstddef>
 #include <map>
@@ -19,14 +17,14 @@ private:
 public:
     explicit PriceLevels(PriceOrder order);
 
-    PriceLevels() = default;
+    // PriceLevels() = default;
     ~PriceLevels() = default;
 
     PriceLevels(const PriceLevels&) = delete;
-    PriceLevels& operator=(const PriceLevels&) noexcept = default;
+    PriceLevels& operator=(const PriceLevels&) = delete;
 
     PriceLevels(PriceLevels&&) noexcept = default;
-    PriceLevels& operator=(PriceLevels&&) = default;
+    PriceLevels& operator=(PriceLevels&&) noexcept = default;
 
     Limit& get_or_create(Price price);
     Limit* find(Price price) noexcept;
