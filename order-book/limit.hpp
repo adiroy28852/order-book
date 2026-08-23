@@ -1,40 +1,34 @@
 #pragma once
-#include <bits/stdc++.h>
 
-class Order;
+#include "order.hpp"
+#include <cstddef>
+#include <list>
 
 class Limit {
+public: 
+    explicit Limit(Price price);
+    Limit(const Limit&) = delete;
+
+    Limit(Limit&&) noexcept = default;
+    Limit& operator=(Limit&&) noexcept = default;
+
+    ~Limit() = default;
+
+    [[nodiscard]] Price price() const noexcept;
+    [[nodiscard]] Quantity total_quantity() const noexcept;
+    [[nodiscard]] std::size_t order_count() const noexcept;
+    [[nodiscard]] bool empty() const noexcept;
+
+    void add_order(Order order);
+    
+    [[nodiscard]] Order& front() noexcept;
+    [[nodiscard]] const Order& front() const noexcept;
+
+    Quantity execute(Quantity quantity);
+    
+    void remove_front() noexcept;
 private:
-    int limitPrice;
-    int size;
-    int totalVolume;
-    bool buySell;
-    Limit *parent;
-    Limit *left;
-    Limit *right;
-    Order *headOrder;
-    Order *tailOrder;
-    friend class Order;
-
-public:
-    Limit(int _limitPrice, bool _buySell, int _size {0}, int _totalVolume {0});
-    ~Limit();
-
-    Order* getHeadOrder();
-    int getLimitPrice() const;
-    int getSize() const;
-    int getTotalVolume() const;
-    bool getBuySell() const;
-    Limit* getParent() const;
-    Limit* getLeftChidl() const;
-    Limit* getRightChild() const;
-    void setParent(Limit* _parent);
-    void setLeftChild(Limit* _leftChild);
-    void setRightChild(Limit* _rightChild);
-    void partialFill(int shares);
-
-    void append(Order *order);
-    void getBack() const;
-    void getFront() const;
-    void print() const;
+    Price price_;
+    Quantity total_quantity_{0};
+    std::list<Order> orders_;
 };
