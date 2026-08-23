@@ -6,9 +6,9 @@ enum class Side : std::uint8_t {
     Sell
 };
 
-using OrderId = std::uint8_t;
+using OrderId = std::uint64_t;
 using Price = std::int64_t;
-using Quantity = std::uint8_t;
+using Quantity = std::uint64_t;
 
 class Order {
 public:
