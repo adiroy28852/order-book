@@ -22,7 +22,9 @@ const Order* Book::find_order(OrderId id) const noexcept {
 }
 
 Order& Book::add_order(OrderId id, Side side, Price price, Quantity quantity) {
-    if (orders_.contains(id)) return NULL;
+    if (orders_.contains(id)) {
+        throw  std::invalid_argument("Order id already exists \n");
+    }
 
     auto order = std::make_unique<Order> (id, side, price, quantity);
     Order& reference = *order;
