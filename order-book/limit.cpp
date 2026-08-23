@@ -3,7 +3,6 @@
 
 #include <cassert>
 #include <stdexcept>
-#include <utility>
 
 Limit::Limit(Price price) : price_(price) {
     if (price <= 0) {
@@ -37,19 +36,19 @@ void Limit::add_order(Order order) {
     }
 
     total_quantity_ += order.remaining_quantity();
-    orders_.push_back(std::move(order));
+    orders_.push_back(&order);
 }
 
 Order& Limit::front() noexcept {
     assert(!orders_.empty());
 
-    return orders_.front();
+    return *orders_.front();
 }
 
 const Order& Limit::front() const noexcept {
     assert(!orders_.empty());
 
-    return orders_.front();
+    return *orders_.front();
 }
 
 Quantity Limit::execute(Quantity quantity) {
@@ -58,7 +57,7 @@ Quantity Limit::execute(Quantity quantity) {
     Quantity executed {0};
 
     while (quantity > 0 && !orders_.empty()) {
-        Order& order = orders_.front();
+        Order& order = *orders_.front();
 
         const Quantity available = order.remaining_quantity();
         const Quantity fill_quantity = available < quantity ? available : quantity;
@@ -78,6 +77,6 @@ Quantity Limit::execute(Quantity quantity) {
 void Limit::remove_front() noexcept {
     assert(!orders_.empty());
 
-    total_quantity_ -= orders_.front().remaining_quantity();
+    total_quantity_ -= (*orders_.front()).remaining_quantity();
     orders_.pop_front();
 }

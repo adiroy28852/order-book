@@ -8,6 +8,7 @@ class Limit {
 public: 
     explicit Limit(Price price);
     Limit(const Limit&) = delete;
+    Limit& operator=(const Limit&) = delete;
 
     Limit(Limit&&) noexcept = default;
     Limit& operator=(Limit&&) noexcept = default;
@@ -30,5 +31,5 @@ public:
 private:
     Price price_;
     Quantity total_quantity_{0};
-    std::list<Order> orders_;
+    std::list<Order*> orders_;
 };
