@@ -26,7 +26,7 @@ bool Limit::empty() const noexcept {
     return orders_.empty();
 }
 
-void Limit::add_order(Order order) {
+void Limit::add_order(Order& order) {
     if (order.price() != price_) {
         throw std::invalid_argument("Order price != limit price \n");
     }
@@ -77,6 +77,6 @@ Quantity Limit::execute(Quantity quantity) {
 void Limit::remove_front() noexcept {
     assert(!orders_.empty());
 
-    total_quantity_ -= (*orders_.front()).remaining_quantity();
+    total_quantity_ -= orders_.front()->remaining_quantity();
     orders_.pop_front();
 }

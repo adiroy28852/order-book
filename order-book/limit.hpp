@@ -20,7 +20,7 @@ public:
     [[nodiscard]] std::size_t order_count() const noexcept;
     [[nodiscard]] bool empty() const noexcept;
 
-    void add_order(Order order);
+    void add_order(Order& order);
     
     [[nodiscard]] Order& front() noexcept;
     [[nodiscard]] const Order& front() const noexcept;
