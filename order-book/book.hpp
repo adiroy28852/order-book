@@ -4,7 +4,6 @@
 #include "pricelevels.hpp"
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <unordered_map>
 
@@ -26,6 +25,6 @@ public:
     Order* find_order(OrderId id) noexcept;
     const Order* find_order(OrderId id) const noexcept;
 
-    Order& add_order(OrderId id, Side side, Price price, Quantity quantity);
+    // Order& add_order(OrderId id, Side side, Price price, Quantity quantity);
     Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };

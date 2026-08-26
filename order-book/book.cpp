@@ -3,14 +3,14 @@
 #include "order.hpp"
 #include "pricelevels.hpp"
 
-#include <cstddef>
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
 Order* Book::find_order(OrderId id) noexcept {
     const auto it = orders_.find(id);
 
-    if (it == end(orders_)) return NULL;
+    if (it == end(orders_)) return nullptr;
 
     return it->second.get();
 }
@@ -18,23 +18,24 @@ Order* Book::find_order(OrderId id) noexcept {
 const Order* Book::find_order(OrderId id) const noexcept {
     const auto it = orders_.find(id);
 
-    if (it == end(orders_)) return NULL;
+    if (it == end(orders_)) return nullptr;
 
     return it->second.get();
 }
 
-Order& Book::add_order(OrderId id, Side side, Price price, Quantity quantity) {
-    if (orders_.contains(id)) {
-        throw  std::invalid_argument("Order id already exists \n");
-    }
+// Order& Book::add_order(OrderId id, Side side, Price price, Quantity quantity) {
+//     if (orders_.contains(id)) {
+//         throw  std::invalid_argument("Order id already exists \n");
+//     }
 
-    auto order = std::make_unique<Order> (id, side, price, quantity);
-    Order& reference = *order;
+//     auto order = std::make_unique<Order> (id, side, price, quantity);
+//     Order& reference = *order;
     
-    orders_.emplace(id, std::move(order));
+//     orders_.emplace(id, std::move(order));
 
-    return reference;
-}
+//     return reference;
+// }
+// removed as we now have add_limit_order
 
 Order& Book::add_limit_order(OrderId id, Side side, Price price, Quantity quantity) {
     if (orders_.contains(id)) {
@@ -43,12 +44,13 @@ Order& Book::add_limit_order(OrderId id, Side side, Price price, Quantity quanti
 
     auto order = std::make_unique<Order>(id, side, price, quantity);
     Order& reference = *order;
+    // first validate get/create limit, create order, then emplace into orders_. 
+    PriceLevels& lvls = side == Side::Buy ? bids_ : asks_;
+
+    Limit& limit = lvls.get_or_create(price);
 
     orders_.emplace(id, std::move(order));
-
-    PriceLevels& levels = side == Side::Buy ? bids_ : asks_;
-    Limit& limit = levels.get_or_create(price);
-
     limit.add_order(reference);
+
     return reference;
 }
