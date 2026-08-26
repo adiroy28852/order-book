@@ -1,6 +1,7 @@
 #pragma once
 
 #include "order.hpp"
+#include "pricelevels.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -10,7 +11,8 @@
 class Book {
 private:
     std::unordered_map<OrderId, std::unique_ptr<Order>> orders_;
-
+    PriceLevels bids_{PriceOrder::Descending};
+    PriceLevels asks_{PriceOrder::Ascending};
 public:
     Book() = default;
     ~Book() = default;
