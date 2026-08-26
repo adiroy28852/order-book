@@ -10,8 +10,6 @@
 class Book {
 private:
     std::unordered_map<OrderId, std::unique_ptr<Order>> orders_;
-    PriceLevels bids_{PriceOrder::Descending};
-    PriceLevels asks_{PriceOrder::Ascending};
 public:
     Book() = default;
     ~Book() = default;
@@ -25,6 +23,8 @@ public:
     Order* find_order(OrderId id) noexcept;
     const Order* find_order(OrderId id) const noexcept;
 
+    PriceLevels bids_{PriceOrder::Descending};
+    PriceLevels asks_{PriceOrder::Ascending};
     // Order& add_order(OrderId id, Side side, Price price, Quantity quantity);
     Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };

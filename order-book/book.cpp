@@ -54,3 +54,11 @@ Order& Book::add_limit_order(OrderId id, Side side, Price price, Quantity quanti
 
     return reference;
 }
+
+const PriceLevels& Book::bids() const noexcept {
+    return bids_;
+}
+
+const PriceLevels& Book::asks() const noexcept {
+    return asks_;
+}

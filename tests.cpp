@@ -1,0 +1,28 @@
+#include "order-book/book.hpp"
+#include "order-book/order.hpp"
+
+#include <cassert>
+#include <iostream>
+
+int main() {
+    Book book;
+
+    auto& order1 = book.add_limit_order(1, Side::Buy, 100, 50);
+    auto& order2 = book.add_limit_order(2, Side::Buy, 100, 30);
+    auto& order3 = book.add_limit_order(3, Side::Buy, 105, 20);
+
+    assert(order1.id() == 1);
+    assert(order2.id() == 2);
+    assert(order3.id() == 3);
+
+    auto& ask1 = book.add_limit_order(4, Side::Sell, 110, 40);
+    auto& ask2 = book.add_limit_order(5, Side::Sell, 105, 20);
+    auto& ask3 = book.add_limit_order(6, Side::Sell, 110, 10);
+    
+    assert(ask1.id() == 4);
+    assert(ask2.id() == 5);
+    assert(ask3.id() == 6);
+    
+
+    std::cout << "All TC passed\n";
+}
