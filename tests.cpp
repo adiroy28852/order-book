@@ -23,6 +23,25 @@ int main() {
     assert(ask2.id() == 5);
     assert(ask3.id() == 6);
     
+    assert(book.find_order(1) != nullptr);
+    assert(book.find_order(999) == nullptr);
+
+    assert(book.bids().size() == 2);
+    assert(book.bids().best().price() == 105);
+    assert(book.bids().best().total_quantity() == 20);
+
+    assert(book.bids().find(100) != nullptr);
+    assert(book.bids().find(100)->order_count() == 2);
+    assert(book.bids().find(100)->total_quantity() == 80);
+    assert(book.bids().find(100)->front().id() == 1);
+
+    assert(book.asks().size() == 2);
+    assert(book.asks().best().price() == 105);
+    assert(book.asks().best().total_quantity() == 20);
+
+    assert(book.asks().find(110) != nullptr);
+    assert(book.asks().find(110)->order_count() == 2);
+    assert(book.asks().find(110)->total_quantity() == 50);
 
     std::cout << "All TC passed\n";
 }

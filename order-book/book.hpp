@@ -27,4 +27,6 @@ public:
     PriceLevels asks_{PriceOrder::Ascending};
     // Order& add_order(OrderId id, Side side, Price price, Quantity quantity);
     Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
+    const PriceLevels& bids() const noexcept;
+    const PriceLevels& asks() const noexcept;
 };
