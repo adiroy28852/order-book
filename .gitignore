@@ -1,0 +1,62 @@
+# Build artifacts
+build/
+cmake-build-*/
+out/
+bin/
+obj/
+
+# Compiled binaries
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Executables without extensions
+tests
+
+# Debugging / profiling
+*.dSYM/
+*.gcda
+*.gcno
+*.prof
+*.profraw
+*.profdata
+*.log
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+
+# Ninja
+.ninja_deps
+.ninja_log
+
+# IDEs / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# macOS
+.AppleDouble
+.LSOverride
+._*
+
+# Clang
+*.pch
+
+# Temporary files
+*.tmp
+*.temp
+*~
