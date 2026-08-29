@@ -29,6 +29,15 @@ Limit* PriceLevels::find(Price price) noexcept {
     return &it->second;
 }
 
+const Limit* PriceLevels::find(Price price) const noexcept {
+    const auto it = levels_.find(price);
+
+    if (it == levels_.end()) {
+        return NULL;
+    }
+    return &it->second;
+}
+
 void PriceLevels::erase(Price price) noexcept {
     levels_.erase(price);
 }

@@ -28,6 +28,7 @@ public:
 
     Limit& get_or_create(Price price);
     Limit* find(Price price) noexcept;
+    const Limit* find(Price price) const noexcept;
 
     void erase(Price price) noexcept;
 
