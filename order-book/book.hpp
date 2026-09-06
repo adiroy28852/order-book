@@ -25,7 +25,12 @@ public:
 
     PriceLevels bids_{PriceOrder::Descending};
     PriceLevels asks_{PriceOrder::Ascending};
-    Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
     const PriceLevels& bids() const noexcept;
     const PriceLevels& asks() const noexcept;
+
+    // fundamental operations
+    Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
+    Quantity cancel_order(OrderId id);
+    Quantity execute_market_order(Side side, Quantity quantity);
+    Quantity execute_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };

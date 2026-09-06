@@ -354,4 +354,3 @@ clang++ -std=c++20 -Wall -Wextra -Wpedantic \
 
 **Current milestone: Core book construction complete.**
 
-The next milestone is the **matching engine**, followed by cancellation and modification. Only after those operations are correct should the underlying price-level data structure be optimized or replaced.
