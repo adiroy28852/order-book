@@ -54,7 +54,7 @@ Quantity Book::cancel_order(OrderId id) {
         return 0;
     }
 
-    Order& order = (*it)->second;
+    Order& order = *it->second;
 
     PriceLevels& lvls = order.side() == Side::Buy ? bids_ : asks_;
 
