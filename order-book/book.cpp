@@ -65,15 +65,16 @@ Quantity Book::cancel_order(OrderId id) {
     }
 
     const Quantity remaining = order.remaining_quantity();
+
     if (!limit->remove_order(id)) {
         return 0;
     }
-    
+
     if (limit->empty()) {
         lvls.erase(order.price());
-
-        orders_.erase(it);
-        return remaining;
     }
 
+    orders_.erase(it);
+
+    return remaining;
 }
