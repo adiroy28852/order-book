@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <algorithm>
 
 Limit::Limit(Price price) : price_(price) {
     if (price <= 0) {
@@ -79,4 +80,21 @@ void Limit::remove_front() noexcept {
 
     total_quantity_ -= orders_.front()->remaining_quantity();
     orders_.pop_front();
+}
+
+bool Limit::remove_order(OrderId id) noexcept {
+    const auto it = std::find_if(
+        orders_.begin(), 
+        orders_.end(),
+        [id](const Order* order) noexcept {
+            return order->id() == id;
+        }
+    );
+
+    if (it == orders_.end()) return false;
+
+    total_quantity_ -= (*it)->remaining_quantity();
+    orders_.erase(it);
+
+    return true;
 }

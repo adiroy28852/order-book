@@ -7,6 +7,7 @@
 class Limit {
 public: 
     explicit Limit(Price price);
+
     Limit(const Limit&) = delete;
     Limit& operator=(const Limit&) = delete;
 
@@ -27,6 +28,7 @@ public:
 
     Quantity execute(Quantity quantity);
     
+    bool remove_order(OrderId id) noexcept;
     void remove_front() noexcept;
 private:
     Price price_;

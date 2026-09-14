@@ -1,4 +1,5 @@
 #include "book.hpp"
+#include "order.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -44,4 +45,35 @@ const PriceLevels& Book::bids() const noexcept {
 
 const PriceLevels& Book::asks() const noexcept {
     return asks_;
+}
+
+Quantity Book::cancel_order(OrderId id) {
+    const auto it = orders_.find(id);
+
+    if (it == orders_.end()) {
+        return 0;
+    }
+
+    Order& order = (*it)->second;
+
+    PriceLevels& lvls = order.side() == Side::Buy ? bids_ : asks_;
+
+    Limit* limit = lvls.find(order.price());
+
+    if (limit == nullptr) {
+        return 0;
+    }
+
+    const Quantity remaining = order.remaining_quantity();
+    if (!limit->remove_order(id)) {
+        return 0;
+    }
+    
+    if (limit->empty()) {
+        lvls.erase(order.price());
+
+        orders_.erase(it);
+        return remaining;
+    }
+
 }
