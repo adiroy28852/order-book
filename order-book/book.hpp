@@ -2,6 +2,7 @@
 
 #include "order.hpp"
 #include "pricelevels.hpp"
+#include "trade.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -32,5 +33,5 @@ public:
     Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
     Quantity cancel_order(OrderId id);
     Quantity execute_market_order(Side side, Quantity quantity);
-    Quantity execute_limit_order(OrderId id, Side side, Price price, Quantity quantity);
+    std::vector<Trade> execute_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };

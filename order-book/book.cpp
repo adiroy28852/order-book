@@ -1,5 +1,6 @@
 #include "book.hpp"
 #include "order.hpp"
+#include "trade.hpp"
 
 #include <stdexcept>
 #include <utility>
