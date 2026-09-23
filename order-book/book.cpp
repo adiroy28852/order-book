@@ -115,12 +115,13 @@ std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
 
         if (maker.is_filled()) {
             const OrderId maker_id = maker.id();
+            const Price maker_price = level.price();
 
             level.remove_front();
             orders_.erase(maker_id);
 
             if (level.empty()) {
-                opposite.erase(level.price());
+                opposite.erase(maker_price);
             }
         }
     }
