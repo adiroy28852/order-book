@@ -1,7 +1,10 @@
 #include "book.hpp"
+#include "limit.hpp"
 #include "order.hpp"
+#include "pricelevels.hpp"
 #include "trade.hpp"
 
+#include <memory>
 #include <stdexcept>
 #include <utility>
 
@@ -78,4 +81,60 @@ Quantity Book::cancel_order(OrderId id) {
     orders_.erase(it);
 
     return remaining;
+}
+
+std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price, Quantity quantity) {
+    if (orders_.contains(id)) {
+        throw std::invalid_argument("Order ID already exists\n");
+    }
+
+    Order incoming(id, side, price, quantity);
+
+    std::vector<Trade> trades;
+
+    PriceLevels& opposite = side == Side::Buy ? asks_ : bids_;
+
+    while (incoming.remaining_quantity() > 0 && opposite.size()) {
+        
+        Limit& level = opposite.best();
+
+        const bool crosses = side == Side::Buy 
+        ? level.price() <= incoming.price() 
+        : level.price () >= incoming.price();
+
+        if (!crosses) break;
+
+        Order& maker = level.front();
+
+        const Quantity quantity_traded = std::min(incoming.remaining_quantity(), maker.remaining_quantity());
+
+        maker.fill(quantity_traded);
+        incoming.fill(quantity_traded);
+
+        trades.push_back({maker.id(), incoming.id(), maker.price(), quantity_traded});
+
+        if (maker.is_filled()) {
+            const OrderId maker_id = maker.id();
+
+            level.remove_front();
+            orders_.erase(maker_id);
+
+            if (level.empty()) {
+                opposite.erase(level.price());
+            }
+        }
+    }
+
+    if (incoming.remaining_quantity() > 0) {
+        auto resting = std::make_unique<Order>(std::move(incoming));
+
+        Order& reference = *resting;
+
+        PriceLevels& own = side == Side::Buy ? bids_ : asks_;
+
+        Limit& level = own.get_or_create(price);
+        orders_.emplace(id, std::move(resting));
+        level.add_order(reference);
+    }
+    return trades;
 }
