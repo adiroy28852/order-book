@@ -27,6 +27,7 @@ public:
     [[nodiscard]] const Order& front() const noexcept;
 
     Quantity execute(Quantity quantity);
+    Quantity execute_front(Quantity quantity);
     
     bool remove_order(OrderId id) noexcept;
     void remove_front() noexcept;

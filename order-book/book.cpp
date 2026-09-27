@@ -55,34 +55,25 @@ const PriceLevels& Book::asks() const noexcept {
 Quantity Book::cancel_order(OrderId id) {
     const auto it = orders_.find(id);
 
-    
-    
     if (it == orders_.end()) {
         return 0;
     }
-    
+
     Order& order = *it->second;
-    
-    PriceLevels& lvls = order.side() == Side::Buy ? bids_ : asks_;
-    
+
+    PriceLevels& lvls =
+        order.side() == Side::Buy ? bids_ : asks_;
+
     Limit* limit = lvls.find(order.price());
 
     if (limit == nullptr) {
-        throw std::logic_error("Order exists but no price lvl");
-    }
-
-    if (!limit->remove_order(id)) {
-        throw std::logic_error("Order exists but not in price level");
-    }
-
-    if (limit == nullptr) {
-        return 0;
+        throw std::logic_error("Order exists but no price level");
     }
 
     const Quantity remaining = order.remaining_quantity();
 
     if (!limit->remove_order(id)) {
-        return 0;
+        throw std::logic_error("Order exists but not in price level");
     }
 
     if (limit->empty()) {
@@ -93,7 +84,6 @@ Quantity Book::cancel_order(OrderId id) {
 
     return remaining;
 }
-
 std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price, Quantity quantity) {
     if (orders_.contains(id)) {
         throw std::invalid_argument("Order ID already exists\n");

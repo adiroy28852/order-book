@@ -75,6 +75,26 @@ Quantity Limit::execute(Quantity quantity) {
     return executed;
 }
 
+Quantity Limit::execute_front(Quantity quantity) {
+    if (quantity == 0 || orders_.empty()) {
+        return 0;
+    }
+
+    Order& order = *orders_.front();
+
+    const Quantity fill_quantity =
+        std::min(quantity, order.remaining_quantity());
+
+    order.fill(fill_quantity);
+    total_quantity_ -= fill_quantity;
+
+    if (order.is_filled()) {
+        orders_.pop_front();
+    }
+
+    return fill_quantity;
+}
+
 void Limit::remove_front() noexcept {
     assert(!orders_.empty());
 
