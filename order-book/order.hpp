@@ -30,7 +30,7 @@ public:
     
     [[nodiscard]] bool is_filled() const noexcept;
 
-    Quantity fill(Quantity quantity) noexcept;
+    Quantity fill(Quantity quantity)s;
 
 private:
     OrderId id_;

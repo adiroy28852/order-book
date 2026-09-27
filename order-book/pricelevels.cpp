@@ -24,7 +24,7 @@ Limit* PriceLevels::find(Price price) noexcept {
     const auto it = levels_.find(price);
 
     if (it == levels_.end()) {
-        return NULL;
+        return nullptr;
     }
     return &it->second;
 }
@@ -33,7 +33,7 @@ const Limit* PriceLevels::find(Price price) const noexcept {
     const auto it = levels_.find(price);
 
     if (it == levels_.end()) {
-        return NULL;
+        return nullptr;
     }
     return &it->second;
 }

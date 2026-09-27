@@ -42,10 +42,14 @@ bool Order::is_filled() const noexcept {
     return remaining_quantity_ == 0;
 }
 
-Quantity Order::fill(Quantity quantity) noexcept {
-    assert(quantity > 0);
-    assert(quantity <= remaining_quantity_);
+Quantity Order::fill(Quantity quantity) {
+    if (quantity == 0){
+        throw std::invalid_argument("Fill quantity must be non-zero");
+    }
 
+    if (quantity > remaining_quantity_) {
+        throw std::invalid_argument("Fill quantity exceeds remaining quantity");
+    }
     remaining_quantity_ -= quantity;
     return  quantity;
 }

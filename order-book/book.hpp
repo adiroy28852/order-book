@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 
 class Book {
 private:
