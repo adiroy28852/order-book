@@ -95,35 +95,41 @@ std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
 
     PriceLevels& opposite = side == Side::Buy ? asks_ : bids_;
 
-    while (incoming.remaining_quantity() > 0 && opposite.size()) {
-        
+    while (incoming.remaining_quantity() > 0 && !opposite.empty()) {
         Limit& level = opposite.best();
-
-        const bool crosses = side == Side::Buy 
-        ? level.price() <= incoming.price() 
-        : level.price () >= incoming.price();
-
-        if (!crosses) break;
-
+    
+        const bool crosses =
+            side == Side::Buy
+                ? level.price() <= incoming.price()
+                : level.price() >= incoming.price();
+    
+        if (!crosses) {
+            break;
+        }
+    
         Order& maker = level.front();
-
-        const Quantity quantity_traded = std::min(incoming.remaining_quantity(), maker.remaining_quantity());
-
-        maker.fill(quantity_traded);
-        incoming.fill(quantity_traded);
-
-        trades.push_back({maker.id(), incoming.id(), maker.price(), quantity_traded});
-
-        if (maker.is_filled()) {
-            const OrderId maker_id = maker.id();
-            const Price maker_price = level.price();
-
-            level.remove_front();
+    
+        const OrderId maker_id = maker.id();
+        const Price trade_price = maker.price();
+    
+        const Quantity quantity_traded =
+            std::min(incoming.remaining_quantity(),
+                     maker.remaining_quantity());
+    
+        const Quantity executed = level.execute_front(quantity_traded);
+    
+        incoming.fill(executed);
+    
+        trades.push_back({
+            maker_id,
+            incoming.id(),
+            trade_price,
+            executed
+        });
+    
+        if (level.empty()) {
             orders_.erase(maker_id);
-
-            if (level.empty()) {
-                opposite.erase(maker_price);
-            }
+            opposite.erase(trade_price);
         }
     }
 
