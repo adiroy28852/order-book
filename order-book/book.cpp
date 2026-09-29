@@ -125,8 +125,6 @@ std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
     if (level.empty()) {
         opposite.erase(trade_price);
     }
-
-    opposite.erase(trade_price);
   }
 
   if (incoming.remaining_quantity() > 0) {
