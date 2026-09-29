@@ -554,6 +554,100 @@ void test_empty_price_level_removal_after_match() {
     assert(book.asks().size() == 1);
 }
 
+void test_market_buy() {
+    Book book;
+
+    book.add_limit_order(1, Side::Sell, 100, 20);
+    book.add_limit_order(2, Side::Sell, 105, 30);
+
+    const auto trades =
+        book.execute_market_order(3, Side::Buy, 40);
+
+    assert(trades.size() == 2);
+
+    assert(trades[0].maker_order_id == 1);
+    assert(trades[0].taker_order_id == 3);
+    assert(trades[0].price == 100);
+    assert(trades[0].quantity == 20);
+
+    assert(trades[1].maker_order_id == 2);
+    assert(trades[1].taker_order_id == 3);
+    assert(trades[1].price == 105);
+    assert(trades[1].quantity == 20);
+
+    assert(book.find_order(1) == nullptr);
+
+    assert(book.find_order(2) != nullptr);
+    assert(book.find_order(2)->remaining_quantity() == 10);
+
+    assert(book.asks().find(100) == nullptr);
+    assert(book.asks().find(105) != nullptr);
+    assert(book.asks().find(105)->total_quantity() == 10);
+
+    assert(book.find_order(3) == nullptr);
+}
+
+void test_market_sell() {
+    Book book;
+
+    book.add_limit_order(1, Side::Buy, 105, 30);
+    book.add_limit_order(2, Side::Buy, 100, 20);
+
+    const auto trades =
+        book.execute_market_order(3, Side::Sell, 40);
+
+    assert(trades.size() == 2);
+
+    assert(trades[0].maker_order_id == 1);
+    assert(trades[0].price == 105);
+    assert(trades[0].quantity == 30);
+
+    assert(trades[1].maker_order_id == 2);
+    assert(trades[1].price == 100);
+    assert(trades[1].quantity == 10);
+
+    assert(book.find_order(1) == nullptr);
+
+    assert(book.find_order(2) != nullptr);
+    assert(book.find_order(2)->remaining_quantity() == 10);
+
+    assert(book.bids().find(105) == nullptr);
+    assert(book.bids().find(100) != nullptr);
+    assert(book.bids().find(100)->total_quantity() == 10);
+}
+
+void test_market_order_exhausts_liquidity() {
+    Book book;
+
+    book.add_limit_order(1, Side::Sell, 100, 20);
+
+    const auto trades =
+        book.execute_market_order(2, Side::Buy, 50);
+
+    assert(trades.size() == 1);
+
+    assert(trades[0].maker_order_id == 1);
+    assert(trades[0].taker_order_id == 2);
+    assert(trades[0].price == 100);
+    assert(trades[0].quantity == 20);
+
+    assert(book.asks().empty());
+    assert(book.find_order(1) == nullptr);
+    assert(book.find_order(2) == nullptr);
+}
+
+void test_market_order_empty_book() {
+    Book book;
+
+    const auto trades =
+        book.execute_market_order(1, Side::Buy, 50);
+
+    assert(trades.empty());
+    assert(book.bids().empty());
+    assert(book.asks().empty());
+    assert(book.find_order(1) == nullptr);
+}
+
 int main() {
     test_order();
     test_invalid_order();
@@ -583,6 +677,11 @@ int main() {
     test_sell_does_not_cross();
     test_remainder_becomes_resting_order();
     test_empty_price_level_removal_after_match();
+    
+    test_market_buy();
+    test_market_sell();
+    test_market_order_exhausts_liquidity();
+    test_market_order_empty_book();
 
     std::cout << "All tests passed\n";
 }
