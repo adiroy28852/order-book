@@ -118,10 +118,15 @@ std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
 
     trades.push_back({maker_id, incoming.id(), trade_price, executed});
 
-    if (level.empty()) {
-      orders_.erase(maker_id);
-      opposite.erase(trade_price);
+    if (maker.is_filled()) {
+        orders_.erase(maker_id);
     }
+    
+    if (level.empty()) {
+        opposite.erase(trade_price);
+    }
+
+    opposite.erase(trade_price);
   }
 
   if (incoming.remaining_quantity() > 0) {
@@ -175,9 +180,12 @@ std::vector<Trade> Book::execute_market_order(OrderId id, Side side,
 
     trades.push_back({maker_id, incoming.id(), trade_price, executed});
 
+    if (maker.is_filled()) {
+        orders_.erase(maker_id);
+    }
+
     if (level.empty()) {
-      orders_.erase(maker_id);
-      opposite.erase(trade_price);
+        opposite.erase(trade_price);
     }
   }
 
