@@ -33,6 +33,6 @@ public:
     // fundamental operations
     Order& add_limit_order(OrderId id, Side side, Price price, Quantity quantity);
     Quantity cancel_order(OrderId id);
-    Quantity execute_market_order(Side side, Quantity quantity);
+    std::vector<Trade> execute_market_order(OrderId id, Side side, Quantity quantity);
     std::vector<Trade> execute_limit_order(OrderId id, Side side, Price price, Quantity quantity);
 };
