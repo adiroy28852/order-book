@@ -1,356 +1,56 @@
 # Order Book
 
-A limit order book implemented from scratch in modern C++20.
+A small in-memory limit order book written from scratch in modern C++20. The v1 goal is a clear, deterministic matching library that demonstrates price-time priority, order ownership, and lifecycle correctness. It is an educational project, not production exchange software.
 
-The project is focused on understanding the data structures, ownership model, matching logic, and performance characteristics behind an electronic order book rather than copying an existing implementation.
+## Features
 
-## Current Architecture
+- Buy and sell limit orders
+- Price-time priority: best price first, FIFO within a price
+- Partial and full fills across multiple levels
+- Market orders that consume available opposite-side liquidity
+- Cancellation by order ID, including partially filled orders
+- Trade records for each execution
+- Duplicate ID and invalid input rejection
+- Empty level cleanup
+- Deterministic tests and a book invariant checker
 
-```text
-                    Book
-                     │
-          ┌──────────┴──────────┐
-          │                     │
-        bids                   asks
-          │                     │
-    PriceLevels            PriceLevels
-          │                     │
-        Limit                 Limit
-          │                     │
-       Order*                Order*
-          │                     │
-          └──────────┬──────────┘
-                     │
-                   Order
-```
+## Design
 
-`Book` owns the actual `Order` objects.
+`Book` owns each live `Order` through `std::unique_ptr` in an ID index. `Limit` stores non-owning pointers in FIFO order and tracks aggregate remaining quantity. `PriceLevels` orders `Limit`s by price using `std::map` (ascending for asks, descending for bids). Matching and order lifetime remain coordinated by `Book`.
 
-`Limit` does not own orders. It maintains references to orders belonging to `Book`.
+A fully filled or cancelled order is removed from both the price level and the ID index. A limit taker with unfilled quantity rests at its limit price. Market taker remainder is discarded when the opposite book has no more liquidity. Trades execute at the maker's resting price.
 
-This separates:
-
-* Order lifetime
-* Price-level organization
-* Side-specific price ordering
-* Book-level operations
-
-## Data Structures
-
-### Order
-
-Represents an individual order.
-
-An order contains:
-
-* Order ID
-* Side
-* Price
-* Original quantity
-* Remaining quantity
-* Order state
-
-Orders are owned by `Book` through:
-
-```cpp
-std::unordered_map<OrderId, std::unique_ptr<Order>>
-```
-
-This provides stable `Order` object addresses even when the unordered map rehashes.
-
-### Limit
-
-Represents all orders at one price.
-
-```text
-Limit
-├── price
-├── total quantity
-└── FIFO queue
-    ├── Order*
-    ├── Order*
-    └── Order*
-```
-
-Orders at the same price follow price-time priority.
-
-### PriceLevels
-
-Provides the price-level abstraction.
-
-The current implementation uses:
-
-```cpp
-std::map<Price, Limit>
-```
-
-The ordering is configurable:
-
-```cpp
-PriceLevels bids{PriceOrder::Descending};
-PriceLevels asks{PriceOrder::Ascending};
-```
-
-Therefore:
-
-```text
-Bids → highest price is best
-Asks → lowest price is best
-```
-
-The underlying container is intentionally abstracted behind `PriceLevels` so the implementation can later be replaced with a custom tree.
-
-### Book
-
-`Book` owns:
-
-```text
-orders_
-bids_
-asks_
-```
-
-Its responsibility is to coordinate the order book rather than directly manage the internals of individual price levels.
-
-## Ownership Model
-
-The critical ownership relationship is:
-
-```text
-Book
- │
- │ owns
- ▼
-unique_ptr<Order>
- │
- │ referenced by
- ▼
-Limit
- │
- │ stored inside
- ▼
-PriceLevels
-```
-
-An `Order*` stored by a `Limit` is non-owning.
-
-This prevents the price-level structure from becoming responsible for order lifetime.
-
-## Current Functionality
-
-Currently implemented:
-
-* `Order`
-* Order ownership through `std::unique_ptr`
-* `Limit`
-* FIFO ordering within a price level
-* Price-level aggregation
-* Bid/ask price ordering
-* `PriceLevels` abstraction
-* Adding limit orders to `Book`
-* Order lookup by ID
-* Const-correct access to bid/ask levels
-* Basic tests for order insertion and price-level organization
+Cancellation currently searches the FIFO list at its price, so its cost grows with the number of orders at that level. This is accepted for v1; measure before optimizing.
 
 ## Example
 
-Adding orders:
-
 ```cpp
 Book book;
+book.add_limit_order(1, Side::Sell, 100, 50);
+book.add_limit_order(2, Side::Sell, 105, 30);
 
-book.add_limit_order(1, Side::Buy, 100, 50);
-book.add_limit_order(2, Side::Buy, 100, 30);
-book.add_limit_order(3, Side::Buy, 105, 20);
-
-book.add_limit_order(4, Side::Sell, 110, 40);
-book.add_limit_order(5, Side::Sell, 105, 20);
+auto trades = book.execute_limit_order(3, Side::Buy, 100, 20);
+// One trade: 20 @ 100, maker order 1, taker order 3.
 ```
 
-Produces:
+See `main.cpp` for a runnable example. `Book::assert_invariants()` checks that every live order appears exactly once in the correct side/price level and that each level's aggregate quantity is accurate. It throws `std::logic_error` if it finds a mismatch; it is intended as a correctness aid in tests and debug workflows.
 
-```text
-ASK
-105 ── 20
-110 ── 40
+## Build and run
 
-BID
-105 ── 20
-100 ── 80
-```
+From the repository root, with a C++20 compiler:
 
-At price `100`, orders `1` and `2` remain FIFO ordered.
-
-## Matching Engine
-
-Matching is the next major stage.
-
-For an incoming buy:
-
-```text
-best ask.price <= incoming buy.price
-```
-
-For an incoming sell:
-
-```text
-best bid.price >= incoming sell.price
-```
-
-Matching will support:
-
-* Full fills
-* Partial fills
-* Multiple price levels
-* Removal of empty price levels
-* Remaining quantity becoming a resting order
-
-Example:
-
-```text
-ASK
-100 × 40
-105 × 30
-
-Incoming:
-BUY 105 × 50
-```
-
-Result:
-
-```text
-ASK
-105 × 20
-```
-
-The `100 × 40` level is completely consumed.
-
-## Planned Architecture
-
-```text
-                    Book
-                     │
-          ┌──────────┴──────────┐
-          │                     │
-        bids                   asks
-          │                     │
-    PriceLevels            PriceLevels
-          │                     │
-     Price Tree              Price Tree
-          │                     │
-        Limit                 Limit
-          │                     │
-       Order*                Order*
-          │                     │
-          └──────────┬──────────┘
-                     │
-                   Order
-```
-
-The long-term intention is to make the price-level storage replaceable.
-
-For example:
-
-```text
-PriceLevels
-    │
-    ├── std::map implementation
-    │
-    ├── AVL implementation
-    │
-    └── other ordered-tree implementation
-```
-
-The book should depend on the abstraction rather than the specific tree.
-
-## Roadmap
-
-### Phase 1 — Core Structures
-
-* [x] Order
-* [x] Limit
-* [x] PriceLevels
-* [x] Book ownership
-* [x] Bid/ask organization
-* [x] Basic insertion
-* [x] Order lookup
-
-### Phase 2 — Matching (WIP)
-
-* [ ] Match incoming buy orders
-* [ ] Match incoming sell orders
-* [ ] Full fills
-* [ ] Partial fills
-* [ ] Multi-level matching
-* [ ] Empty-level removal
-* [ ] Resting order remainder
-* [ ] Matching tests
-
-
-Benchmark:
-
-* Insert
-* Lookup
-* Best-price access
-* Price-level deletion
-* Matching
-* Cancellation
-
-The goal is to measure the actual workload rather than assuming a particular tree is faster.
-
-## Design Principles
-
-The project prioritizes:
-
-1. **Correctness before optimization**
-2. **Clear ownership**
-3. **Explicit data structures**
-4. **Modern C++20**
-5. **Replaceable components**
-6. **Measured performance rather than assumed performance**
-7. **Understanding the implementation rather than copying an existing order book**
-
-The current implementation intentionally starts with standard-library structures. Performance-critical replacements should be justified through benchmarks rather than introduced prematurely.
-
-## Build
-
-Compile with C++20:
-
-```bash
-clang++ -std=c++20 -Wall -Wextra -Wpedantic \
-    -I. \
-    main.cpp \
-    order-book/order.cpp \
-    order-book/limit.cpp \
-    order-book/pricelevels.cpp \
-    order-book/book.cpp \
-    -o order_book
-```
-
-Run:
-
-```bash
+```sh
+c++ -std=c++20 -Wall -Wextra -Wpedantic main.cpp order-book/order.cpp order-book/limit.cpp order-book/pricelevels.cpp order-book/book.cpp -o order_book
 ./order_book
 ```
 
-Tests:
+Build and run the deterministic test suite:
 
-```bash
-clang++ -std=c++20 -Wall -Wextra -Wpedantic \
-    -I. \
-    tests.cpp \
-    order-book/order.cpp \
-    order-book/limit.cpp \
-    order-book/pricelevels.cpp \
-    order-book/book.cpp \
-    -o tests
+```sh
+c++ -std=c++20 -Wall -Wextra -Wpedantic tests.cpp order-book/order.cpp order-book/limit.cpp order-book/pricelevels.cpp order-book/book.cpp -o order_book_tests
+./order_book_tests
 ```
 
-```bash
-./tests
-```
+## Scope
 
-## Project Status
-
-**Current milestone: Core book construction complete.**
-
+The v1 engine is single-threaded, in-memory, and uses `std::map` for price levels. It does not provide persistence, exchange connectivity, concurrency, or production execution guarantees. Alternative trees, custom allocators, networking, and kernel-bypass work remain later research directions after correctness and baseline performance are established.

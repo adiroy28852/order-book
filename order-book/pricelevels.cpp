@@ -73,3 +73,7 @@ const Limit& PriceLevels::best() const {
     
     return levels_.rbegin()->second;
 }
+
+const std::map<Price, Limit>& PriceLevels::levels() const noexcept {
+    return levels_;
+}

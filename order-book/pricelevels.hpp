@@ -11,9 +11,12 @@ enum class PriceOrder {
 };
 
 class PriceLevels {
+    friend class Book;
 private:
     PriceOrder order_;
     std::map<Price, Limit> levels_;
+
+    [[nodiscard]] const std::map<Price, Limit>& levels() const noexcept;
 public:
     explicit PriceLevels(PriceOrder order);
 
@@ -37,4 +40,5 @@ public:
 
     Limit& best();
     const Limit& best() const;
+
 };

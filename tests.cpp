@@ -294,6 +294,73 @@ void test_cancel_nonexistent_order() {
     assert(book.bids().size() == 1);
 }
 
+void test_cancel_partially_filled_order() {
+    Book book;
+    book.add_limit_order(1, Side::Sell, 100, 100);
+    const auto trades = book.execute_limit_order(2, Side::Buy, 100, 40);
+    assert(trades.size() == 1);
+    assert(book.cancel_order(1) == 60);
+    assert(book.find_order(1) == nullptr);
+    assert(book.asks().empty());
+    book.assert_invariants();
+}
+
+void test_cancel_middle_preserves_fifo() {
+    Book book;
+    book.add_limit_order(1, Side::Sell, 100, 10);
+    book.add_limit_order(2, Side::Sell, 100, 10);
+    book.add_limit_order(3, Side::Sell, 100, 10);
+    assert(book.cancel_order(2) == 10);
+
+    const auto trades = book.execute_limit_order(4, Side::Buy, 100, 15);
+    assert(trades.size() == 2);
+    assert(trades[0].maker_order_id == 1 && trades[0].quantity == 10);
+    assert(trades[1].maker_order_id == 3 && trades[1].quantity == 5);
+    assert(book.find_order(3)->remaining_quantity() == 5);
+    book.assert_invariants();
+}
+
+void test_match_after_partial_fill() {
+    Book book;
+    book.add_limit_order(1, Side::Sell, 100, 100);
+    assert(book.execute_limit_order(2, Side::Buy, 100, 40).size() == 1);
+    assert(book.execute_market_order(3, Side::Buy, 30).size() == 1);
+    assert(book.find_order(1)->remaining_quantity() == 30);
+    book.assert_invariants();
+}
+
+void test_book_rejects_invalid_inputs() {
+    Book book;
+    const auto must_throw = [](auto&& operation) {
+        bool threw = false;
+        try { operation(); } catch (const std::invalid_argument&) { threw = true; }
+        assert(threw);
+    };
+    must_throw([&] { book.add_limit_order(0, Side::Buy, 100, 1); });
+    must_throw([&] { book.add_limit_order(1, Side::Buy, 0, 1); });
+    must_throw([&] { book.add_limit_order(1, Side::Buy, 100, 0); });
+    book.add_limit_order(1, Side::Buy, 100, 1);
+    must_throw([&] { book.execute_limit_order(1, Side::Buy, 100, 1); });
+    must_throw([&] { book.execute_market_order(1, Side::Buy, 1); });
+    must_throw([&] { book.execute_market_order(2, Side::Buy, 0); });
+    book.assert_invariants();
+}
+
+void test_book_invariants_across_operations() {
+    Book book;
+    book.assert_invariants();
+    book.add_limit_order(1, Side::Sell, 100, 25);
+    book.assert_invariants();
+    book.add_limit_order(2, Side::Sell, 105, 25);
+    book.assert_invariants();
+    book.execute_limit_order(3, Side::Buy, 105, 30);
+    book.assert_invariants();
+    book.cancel_order(2);
+    book.assert_invariants();
+    book.execute_market_order(4, Side::Sell, 5);
+    book.assert_invariants();
+}
+
 void test_limit_match_exact_price() {
     Book book;
 
@@ -665,6 +732,11 @@ int main() {
     test_cancel_order();
     test_cancel_last_order_at_price();
     test_cancel_nonexistent_order();
+    test_cancel_partially_filled_order();
+    test_cancel_middle_preserves_fifo();
+    test_match_after_partial_fill();
+    test_book_rejects_invalid_inputs();
+    test_book_invariants_across_operations();
 
     test_limit_match_exact_price();
     test_limit_order_does_not_cross();
