@@ -5,6 +5,7 @@
 #include <list>
 
 class Limit {
+    friend class Book;
 public: 
     explicit Limit(Price price);
 
@@ -28,10 +29,11 @@ public:
 
     Quantity execute(Quantity quantity);
     Quantity execute_front(Quantity quantity);
-    
+
     bool remove_order(OrderId id) noexcept;
     void remove_front() noexcept;
 private:
+    [[nodiscard]] const std::list<Order*>& orders() const noexcept;
     Price price_;
     Quantity total_quantity_{0};
     std::list<Order*> orders_;

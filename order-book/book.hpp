@@ -6,12 +6,19 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
 class Book {
 private:
     std::unordered_map<OrderId, std::unique_ptr<Order>> orders_;
+    PriceLevels bids_{PriceOrder::Descending};
+    PriceLevels asks_{PriceOrder::Ascending};
+
+    std::vector<Trade> match(OrderId taker_id, Side side,
+                             Quantity& remaining,
+                             std::optional<Price> limit_price);
 public:
     Book() = default;
     ~Book() = default;
@@ -25,8 +32,9 @@ public:
     Order* find_order(OrderId id) noexcept;
     const Order* find_order(OrderId id) const noexcept;
 
-    PriceLevels bids_{PriceOrder::Descending};
-    PriceLevels asks_{PriceOrder::Ascending};
+    // Throws std::logic_error if the order indexes or level totals disagree.
+    void assert_invariants() const;
+
     const PriceLevels& bids() const noexcept;
     const PriceLevels& asks() const noexcept;
 

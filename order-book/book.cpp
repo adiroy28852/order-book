@@ -5,8 +5,10 @@
 #include "trade.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 
 Order *Book::find_order(OrderId id) noexcept {
@@ -25,6 +27,59 @@ const Order *Book::find_order(OrderId id) const noexcept {
     return nullptr;
 
   return it->second.get();
+}
+
+void Book::assert_invariants() const {
+  std::unordered_set<OrderId> indexed_ids;
+  indexed_ids.reserve(orders_.size());
+
+  const auto check_side = [this, &indexed_ids](const PriceLevels& side_levels,
+                                               Side expected_side) {
+    for (const auto& [price, level] : side_levels.levels()) {
+      if (level.empty()) {
+        throw std::logic_error("Empty price level in book");
+      }
+
+      Quantity total = 0;
+      for (const Order* order : level.orders()) {
+        if (order == nullptr || order->side() != expected_side ||
+            order->price() != price || order->is_filled()) {
+          throw std::logic_error("Order does not match its price level");
+        }
+
+        const auto owner = orders_.find(order->id());
+        if (owner == orders_.end() || owner->second.get() != order) {
+          throw std::logic_error("Price level contains an unowned order");
+        }
+        if (!indexed_ids.insert(order->id()).second) {
+          throw std::logic_error("Order appears in multiple price levels");
+        }
+
+        if (order->remaining_quantity() >
+            std::numeric_limits<Quantity>::max() - total) {
+          throw std::logic_error("Price-level quantity overflow");
+        }
+        total += order->remaining_quantity();
+      }
+
+      if (total != level.total_quantity()) {
+        throw std::logic_error("Price-level aggregate quantity is incorrect");
+      }
+    }
+  };
+
+  check_side(bids_, Side::Buy);
+  check_side(asks_, Side::Sell);
+
+  if (indexed_ids.size() != orders_.size()) {
+    throw std::logic_error("Order registry and price levels disagree");
+  }
+  for (const auto& [id, order] : orders_) {
+    if (order == nullptr || order->id() != id ||
+        indexed_ids.find(id) == indexed_ids.end()) {
+      throw std::logic_error("Order registry contains an unindexed order");
+    }
+  }
 }
 
 Order &Book::add_limit_order(OrderId id, Side side, Price price,
@@ -85,49 +140,15 @@ Quantity Book::cancel_order(OrderId id) {
 std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
                                              Quantity quantity) {
   if (orders_.contains(id)) {
-    throw std::invalid_argument("Order ID already exists\n");
+    throw std::invalid_argument("Order ID already exists");
   }
-
   Order incoming(id, side, price, quantity);
+  Quantity remaining = incoming.remaining_quantity();
+  auto trades = match(id, side, remaining, price);
 
-  std::vector<Trade> trades;
-
-  PriceLevels &opposite = side == Side::Buy ? asks_ : bids_;
-
-  while (incoming.remaining_quantity() > 0 && !opposite.empty()) {
-    Limit &level = opposite.best();
-
-    const bool crosses = side == Side::Buy ? level.price() <= incoming.price()
-                                           : level.price() >= incoming.price();
-
-    if (!crosses) {
-      break;
-    }
-
-    Order &maker = level.front();
-
-    const OrderId maker_id = maker.id();
-    const Price trade_price = maker.price();
-
-    const Quantity quantity_traded =
-        std::min(incoming.remaining_quantity(), maker.remaining_quantity());
-
-    const Quantity executed = level.execute_front(quantity_traded);
-
-    incoming.fill(executed);
-
-    trades.push_back({maker_id, incoming.id(), trade_price, executed});
-
-    if (maker.is_filled()) {
-        orders_.erase(maker_id);
-    }
-    
-    if (level.empty()) {
-        opposite.erase(trade_price);
-    }
-  }
-
-  if (incoming.remaining_quantity() > 0) {
+  if (remaining > 0) {
+    const Quantity executed = incoming.remaining_quantity() - remaining;
+    if (executed > 0) incoming.fill(executed);
     auto resting = std::make_unique<Order>(std::move(incoming));
 
     Order &reference = *resting;
@@ -143,49 +164,42 @@ std::vector<Trade> Book::execute_limit_order(OrderId id, Side side, Price price,
 
 std::vector<Trade> Book::execute_market_order(OrderId id, Side side,
                                               Quantity quantity) {
-  if (id == 0) {
-    throw std::invalid_argument("Order ID cannot be 0\n");
-  }
+  if (id == 0) throw std::invalid_argument("OrderId cannot be 0");
+  if (quantity == 0) throw std::invalid_argument("Order quantity must be non-zero");
+  if (orders_.contains(id)) throw std::invalid_argument("Order ID already exists");
 
-  if (quantity == 0) {
-    throw std::invalid_argument("Order quantity must be non-zero\n");
-  }
+  Quantity remaining = quantity;
+  return match(id, side, remaining, std::nullopt);
+}
 
-  if (orders_.contains(id)) {
-    throw std::invalid_argument("Order ID already exists\n");
-  }
-
-  Order incoming(id, side, 1, quantity);
-
+std::vector<Trade> Book::match(OrderId taker_id, Side side,
+                               Quantity& remaining,
+                               std::optional<Price> limit_price) {
   std::vector<Trade> trades;
-
   PriceLevels &opposite = side == Side::Buy ? asks_ : bids_;
 
-  while (incoming.remaining_quantity() > 0 && !opposite.empty()) {
+  while (remaining > 0 && !opposite.empty()) {
     Limit &level = opposite.best();
 
-    Order &maker = level.front();
+    if (limit_price) {
+      const bool crosses = side == Side::Buy
+                               ? level.price() <= *limit_price
+                               : level.price() >= *limit_price;
+      if (!crosses) break;
+    }
 
+    Order& maker = level.front();
     const OrderId maker_id = maker.id();
     const Price trade_price = maker.price();
-
-    const Quantity quantity_traded =
-        std::min(incoming.remaining_quantity(), maker.remaining_quantity());
+    const Quantity quantity_traded = std::min(remaining, maker.remaining_quantity());
+    const bool maker_will_be_filled = quantity_traded == maker.remaining_quantity();
 
     const Quantity executed = level.execute_front(quantity_traded);
+    remaining -= executed;
+    trades.push_back({maker_id, taker_id, trade_price, executed});
 
-    incoming.fill(executed);
-
-    trades.push_back({maker_id, incoming.id(), trade_price, executed});
-
-    if (maker.is_filled()) {
-        orders_.erase(maker_id);
-    }
-
-    if (level.empty()) {
-        opposite.erase(trade_price);
-    }
+    if (maker_will_be_filled) orders_.erase(maker_id);
+    if (level.empty()) opposite.erase(trade_price);
   }
-
   return trades;
 }

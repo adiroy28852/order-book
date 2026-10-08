@@ -102,6 +102,10 @@ void Limit::remove_front() noexcept {
     orders_.pop_front();
 }
 
+const std::list<Order*>& Limit::orders() const noexcept {
+    return orders_;
+}
+
 bool Limit::remove_order(OrderId id) noexcept {
     const auto it = std::find_if(
         orders_.begin(), 
